@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Lagos On Chain (LOC) — Gidi Radar & Solana Lifestyle</title>
+  <meta name="description" content="Explore Lagos on-chain: Curated under-10k food spots, underground events, Proof-of-Physical-Vibe cNFT check-ins, and 1-click Solana Blinks ticketing.">
+  
+  <!-- Google Fonts: Plus Jakarta Sans & Space Grotesk -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+  
+  <!-- Leaflet CSS for Map -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+  
+  <!-- Custom Application Styles -->
+  <link rel="stylesheet" href="styles/main.css">
+</head>
+<body>
+  <div id="app" class="app-container">
+    
+    <!-- Top Header Bar -->
+    <header class="top-header">
+      <div class="brand-zone">
+        <div class="brand-logo-badge">
+          <span class="sol-pulse"></span>
+          <span class="logo-emoji">⚡</span>
+        </div>
+        <div class="brand-text">
+          <h1 class="brand-title">LAGOS<span class="highlight-sol">ONCHAIN</span></h1>
+          <span class="brand-subtitle">GIDI RADAR • SOLANA LIFESTYLE OS</span>
+        </div>
+      </div>
+
+      <!-- Live Solana / Market Ticker -->
+      <div class="market-ticker-pill">
+        <span class="pill-dot live"></span>
+        <span class="ticker-label">SOL:</span>
+        <span class="ticker-val" id="sol-price-display">$152.40</span>
+        <span class="ticker-divider">|</span>
+        <span class="ticker-label">₦/USDC:</span>
+        <span class="ticker-val" id="fx-rate-display">₦1,560</span>
+      </div>
+
+      <!-- Wallet & Actions -->
+      <div class="header-actions">
+        <button id="faucet-btn" class="btn btn-secondary-glass" title="Get Test SOL & USDC for simulation">
+          <span class="btn-icon">🚰</span>
+          <span class="btn-text">Faucet</span>
+        </button>
+        <button id="wallet-btn" class="btn btn-solana-connect">
+          <span class="btn-icon">🟣</span>
+          <span id="wallet-btn-label">Connect Wallet</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- Main Content Area with Navigation Tabs -->
+    <main class="main-content">
+      
+      <!-- App Navigation Tabs (Mobile-friendly horizontal scroll / desktop centered) -->
+      <nav class="nav-tabs" role="tablist" aria-label="Main Navigation">
+        <button class="nav-tab active" data-tab="radar" id="tab-btn-radar">
+          <span class="tab-icon">🗺️</span>
+          <span class="tab-label">Gidi Radar Map</span>
+        </button>
+        <button class="nav-tab" data-tab="under10k" id="tab-btn-under10k">
+          <span class="tab-icon">🍲</span>
+          <span class="tab-label">Under 10k Food</span>
+          <span class="tab-badge">Hot</span>
+        </button>
+        <button class="nav-tab" data-tab="events" id="tab-btn-events">
+          <span class="tab-icon">🎟️</span>
+          <span class="tab-label">Events & Blinks</span>
+        </button>
+        <button class="nav-tab" data-tab="passport" id="tab-btn-passport">
+          <span class="tab-icon">🧭</span>
+          <span class="tab-label">Explorer Passport</span>
+          <span class="tab-counter" id="badge-count-pill">0</span>
+        </button>
+        <button class="nav-tab" data-tab="treasury" id="tab-btn-treasury">
+          <span class="tab-icon">💼</span>
+          <span class="tab-label">Founder Revenue</span>
+        </button>
+      </nav>
+
+      <!-- TAB 1: RADAR MAP VIEW -->
+      <section id="view-radar" class="tab-view active">
+        <!-- Filter Controls Bar -->
+        <div class="map-controls-bar">
+          <div class="search-box">
+            <span class="search-icon">🔍</span>
+            <input type="text" id="radar-search" placeholder="Search spots (e.g. Yaba, Surulere, Suya, Raves)..." autocomplete="off" />
+          </div>
+
+          <div class="filter-pills">
+            <button class="filter-pill active" data-filter="all">All Spots (<span id="count-all">0</span>)</button>
+            <button class="filter-pill" data-filter="under10k">Under ₦10k Food</button>
+            <button class="filter-pill" data-filter="event">Youth Events & Raves</button>
+            <button class="filter-pill" data-filter="culture">Culture & Hangouts</button>
+            <button class="filter-pill" data-filter="mainland">Mainland</button>
+            <button class="filter-pill" data-filter="island">Island</button>
+          </div>
+        </div>
+
+        <!-- Radar Layout: Map Canvas + Quick Drawer List -->
+        <div class="radar-split-container">
+          <!-- Leaflet Map Canvas -->
+          <div class="map-wrapper">
+            <div id="lagos-map" class="leaflet-map-canvas"></div>
+            
+            <!-- Floating Map Overlays -->
+            <div class="map-overlay-banner">
+              <div class="bridge-status">
+                <span class="pulse-ring"></span>
+                <span>Third Mainland Bridge Active • <strong>Cross-Bridge Explorer Quests Live</strong></span>
+              </div>
+            </div>
+
+            <div class="map-floating-quick-action">
+              <button id="quick-checkin-btn" class="btn btn-neon-glow">
+                <span class="glow-effect"></span>
+                <span class="btn-icon">⚡</span>
+                <span>Scan PoPV NFC / Check-in</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Side / Bottom Spot Cards Feed -->
+          <aside class="radar-sidebar">
+            <div class="sidebar-header">
+              <h3>Featured Gidi Checkpoints</h3>
+              <span class="subtext">Tap any card to fly on map & mint cNFT badge</span>
+            </div>
+            <div id="spots-feed" class="spots-feed-list">
+              <!-- Dynamically populated from js/data.js -->
+            </div>
+          </aside>
+        </div>
+      </section>
+
+      <!-- TAB 2: UNDER 10K RADAR -->
+      <section id="view-under10k" class="tab-view">
+        <div class="view-header">
+          <div class="header-tag">SAVING LAGOS YOUTH WALLETS</div>
+          <h2>Under ₦10,000 Food & Hangout Radar</h2>
+          <p class="section-desc">Hand-curated, authentic Lagos joints where you eat like royalty without breaking the bank. Pay with Solana Pay or show your <strong>Lagos Genesis Pass</strong> for special discounts & free drinks.</p>
+        </div>
+
+        <div class="filter-row">
+          <div class="filter-group">
+            <button class="pill-btn active" data-subfilter="all">All Cheap Eats</button>
+            <button class="pill-btn" data-subfilter="amala">Amala & Buka</button>
+            <button class="pill-btn" data-subfilter="street">Suya & Street Bites</button>
+            <button class="pill-btn" data-subfilter="pasta">Late Night Pasta & Grills</button>
+          </div>
+        </div>
+
+        <div id="under10k-grid" class="cards-grid">
+          <!-- Dynamically populated -->
+        </div>
+      </section>
+
+      <!-- TAB 3: EVENTS & SOLANA BLINKS -->
+      <section id="view-events" class="tab-view">
+        <div class="view-header">
+          <div class="header-tag">SOLANA ACTIONS & BLINKS</div>
+          <h2>Underground Events & 1-Click Ticketing</h2>
+          <p class="section-desc">Experience <strong>Solana Blinks</strong> in action. Buy verified anti-scalp tickets inside tweets or WhatsApp in 1 second. Zero failed Nigerian POS machines, zero bank app transfer delays.</p>
+        </div>
+
+        <div class="blinks-showcase-container">
+          <div class="blinks-intro-box">
+            <div class="blink-badge-tag">HOW BLINKS WORK</div>
+            <h4>Instant Social Ticketing via Dialect</h4>
+            <p>Every event below can be embedded directly as a live transaction card into X (Twitter) and Telegram feeds. Attendees tap "1-Click RSVP", sign with Phantom/Solflare, and receive a compressed NFT ticket instantly.</p>
+          </div>
+
+          <div id="blinks-feed" class="blinks-grid">
+            <!-- Dynamically populated by js/blinks.js -->
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB 4: EXPLORER PASSPORT (POPV & AIRDROP FARMING) -->
+      <section id="view-passport" class="tab-view">
+        <div class="passport-hero">
+          <div class="passport-card-metal">
+            <div class="passport-top">
+              <div class="passport-seal">
+                <span class="sol-icon">⚡</span>
+                <span>LAGOS ON-CHAIN PASSPORT</span>
+              </div>
+              <div class="passport-tier-badge" id="passport-tier-name">Cadet Explorer</div>
+            </div>
+
+            <div class="passport-body">
+              <div class="explorer-avatar">
+                <span id="passport-avatar-emoji">🧭</span>
+              </div>
+              <div class="explorer-meta">
+                <h3 id="passport-user-handle">gidi_explorer.sol</h3>
+                <div class="explorer-address-chip" id="passport-wallet-chip">Not Connected</div>
+                <div class="stats-row">
+                  <div class="stat-item">
+                    <span class="stat-num" id="stat-mainland-count">0</span>
+                    <span class="stat-lbl">Mainland Spots</span>
+                  </div>
+                  <div class="stat-item">
+                    <span class="stat-num" id="stat-island-count">0</span>
+                    <span class="stat-lbl">Island Spots</span>
+                  </div>
+                  <div class="stat-item">
+                    <span class="stat-num" id="stat-total-cnfts">0</span>
+                    <span class="stat-lbl">cNFT Badges</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="passport-progress-zone">
+              <div class="progress-labels">
+                <span>Cross-Bridge Level: <strong id="progress-level-label">Level 1: Local Lurker</strong></span>
+                <span id="progress-percent-label">0% to Tier 2</span>
+              </div>
+              <div class="progress-bar-track">
+                <div class="progress-bar-fill" id="passport-progress-fill" style="width: 0%"></div>
+              </div>
+            </div>
+
+            <div class="passport-rewards-banner">
+              <span class="banner-icon">🎁</span>
+              <span><strong>Next Reward:</strong> 15% off Street Souk VIP + Superteam Nigeria Airdrop Pool Raffle (Requires 2 Mainland + 2 Island Check-ins)</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Collected Badges Showcase -->
+        <div class="collected-badges-section">
+          <div class="section-title-row">
+            <h3>Verified Physical Badges (cNFTs)</h3>
+            <span class="hint-text">Each badge is minted on Solana upon physical venue verification</span>
+          </div>
+
+          <div id="badges-grid" class="badges-grid-container">
+            <div class="empty-badges-state" id="empty-badges-msg">
+              <div class="empty-icon">📍</div>
+              <h4>No Badges Minted Yet</h4>
+              <p>Explore Lagos! Click "Check-in" on any spot or tap the Quick NFC Check-in button to simulate scanning a physical venue puck.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB 5: FOUNDER REVENUE & TREASURY -->
+      <section id="view-treasury" class="tab-view">
+        <div class="view-header">
+          <div class="header-tag">THE SUSTAINABLE BUSINESS MODEL</div>
+          <h2>Founder Cash Flow & Platform Economics</h2>
+          <p class="section-desc">You cannot build an on-chain revolution on an empty stomach. This live telemetry shows how <strong>Lagos On Chain</strong> generates immediate recurring revenue for the founder through ticketing commissions and sponsored checkpoints.</p>
+        </div>
+
+        <div class="treasury-stats-grid">
+          <div class="kpi-card">
+            <div class="kpi-icon">💰</div>
+            <div class="kpi-content">
+              <span class="kpi-label">Total Volume Processed</span>
+              <span class="kpi-value" id="treasury-volume-display">₦8,450,000</span>
+              <span class="kpi-sub">(~54.12 SOL / $8,250 USDC)</span>
+            </div>
+          </div>
+
+          <div class="kpi-card highlight-green">
+            <div class="kpi-icon">⚡</div>
+            <div class="kpi-content">
+              <span class="kpi-label">Founder Commission Earned (3.5%)</span>
+              <span class="kpi-value highlight" id="treasury-founder-earnings">₦295,750</span>
+              <span class="kpi-sub">(~1.89 SOL in your wallet)</span>
+            </div>
+          </div>
+
+          <div class="kpi-card">
+            <div class="kpi-icon">📍</div>
+            <div class="kpi-content">
+              <span class="kpi-label">Sponsored Quest Checkpoints</span>
+              <span class="kpi-value">₦450,000</span>
+              <span class="kpi-sub">3 Brand Partners @ ₦150k/mo</span>
+            </div>
+          </div>
+
+          <div class="kpi-card">
+            <div class="kpi-icon">🏆</div>
+            <div class="kpi-content">
+              <span class="kpi-label">Superteam Nigeria Grant Target</span>
+              <span class="kpi-value">$5,000 USD</span>
+              <span class="kpi-sub">Application Tier: Consumer Track</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Revenue Streams Breakdown -->
+        <div class="revenue-breakdown-card">
+          <h3>Real-Time Revenue Streams</h3>
+          <div class="stream-table-wrapper">
+            <table class="stream-table">
+              <thead>
+                <tr>
+                  <th>Stream</th>
+                  <th>Fee Model</th>
+                  <th>Payment Settlement</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><strong>Solana Blink Event Ticketing</strong></td>
+                  <td>3.5% on each ticket sold via Action link</td>
+                  <td>Instant split to your Phantom/Solflare wallet</td>
+                  <td><span class="status-chip active">Active Live</span></td>
+                </tr>
+                <tr>
+                  <td><strong>Sponsored Brand Quests</strong></td>
+                  <td>₦100,000 – ₦250,000 / month per featured venue</td>
+                  <td>Direct USDC or Bank Escrow</td>
+                  <td><span class="status-chip active">Active Live</span></td>
+                </tr>
+                <tr>
+                  <td><strong>Superteam Nigeria Ecosystem Grant</strong></td>
+                  <td>Non-dilutive milestone grant ($2.5k – $10k)</td>
+                  <td>USDC Foundation Grant</td>
+                  <td><span class="status-chip ready">Ready to Submit</span></td>
+                </tr>
+                <tr>
+                  <td><strong>Genesis Pass cNFT Mint</strong></td>
+                  <td>500 VIP Passes @ 0.25 SOL (~$38)</td>
+                  <td>Smart Contract Mint Treasury (~$19,000)</td>
+                  <td><span class="status-chip planned">Upcoming Sprint</span></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+    </main>
+
+    <!-- FLOATING CHECK-IN / POPV MODAL -->
+    <div id="checkin-modal" class="modal-backdrop">
+      <div class="modal-dialog">
+        <button class="modal-close-btn" id="checkin-modal-close">&times;</button>
+        <div class="modal-header-icon">📍</div>
+        <h3 id="modal-spot-name">Proof-of-Physical-Vibe (PoPV) Check-in</h3>
+        <p class="modal-subtitle" id="modal-spot-subtitle">Verifying your physical proximity to venue via NFC/Dynamic QR puck...</p>
+
+        <!-- Simulated NFC / QR Scan Animation -->
+        <div class="scan-anim-box">
+          <div class="radar-scan-wave"></div>
+          <div class="puck-graphic">
+            <span class="puck-icon">📱✨</span>
+            <span class="puck-label">TAP TO SCAN NFC PUCK</span>
+          </div>
+        </div>
+
+        <div class="geofence-status-box" id="geofence-status">
+          <div class="status-indicator-pill">
+            <span class="pulse-dot green"></span>
+            <span>Venue Geofence: <strong>Validated (Within 35m)</strong></span>
+          </div>
+          <div class="contract-call-preview">
+            <code>Program: cNFT_PoPV_Lagos • Compression Tree: Active</code>
+          </div>
+        </div>
+
+        <div class="modal-actions">
+          <button id="confirm-mint-btn" class="btn btn-solana-primary btn-full">
+            <span>Mint Free cNFT Badge (Zero Gas)</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- TICKET CHECKOUT / SOLANA BLINK MODAL -->
+    <div id="blink-modal" class="modal-backdrop">
+      <div class="modal-dialog blink-dialog">
+        <button class="modal-close-btn" id="blink-modal-close">&times;</button>
+        <div id="blink-modal-card-container">
+          <!-- Rendered dynamically -->
+        </div>
+      </div>
+    </div>
+
+    <!-- WALLET MODAL -->
+    <div id="wallet-modal" class="modal-backdrop">
+      <div class="modal-dialog">
+        <button class="modal-close-btn" id="wallet-modal-close">&times;</button>
+        <div class="modal-header-icon">🟣</div>
+        <h3>Connect to Lagos On Chain</h3>
+        <p class="modal-subtitle">Choose your preferred connection method:</p>
+
+        <div class="wallet-options-list">
+          <button class="wallet-option-item" id="connect-phantom">
+            <div class="wallet-icon phantom">👻</div>
+            <div class="wallet-info">
+              <h4>Phantom Wallet</h4>
+              <span>Solana standard browser & mobile wallet</span>
+            </div>
+          </button>
+
+          <button class="wallet-option-item" id="connect-solflare">
+            <div class="wallet-icon solflare">🔥</div>
+            <div class="wallet-info">
+              <h4>Solflare</h4>
+              <span>Fast Solana wallet with native Blink support</span>
+            </div>
+          </button>
+
+          <button class="wallet-option-item" id="connect-social">
+            <div class="wallet-icon web3auth">🌐</div>
+            <div class="wallet-info">
+              <h4>Youth Social Pass (Google / Phone)</h4>
+              <span>No seed phrases needed • Powered by Privy/Web3Auth</span>
+            </div>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- TOAST NOTIFICATION CONTAINER -->
+    <div id="toast-container" class="toast-stack"></div>
+
+  </div>
+
+  <!-- Leaflet Map JS -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+  
+  <!-- App JS Modules -->
+  <script src="js/data.js"></script>
+  <script src="js/wallet.js"></script>
+  <script src="js/map.js"></script>
+  <script src="js/popv.js"></script>
+  <script src="js/blinks.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,11 @@
+# System files
+.DS_Store
+*.log
+
+# Python cache
+__pycache__/
+*.pyc
+
+# Local environment
+.env
+.env.local
